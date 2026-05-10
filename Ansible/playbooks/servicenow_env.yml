@@ -1,0 +1,37 @@
+---
+- name: ServiceNow API with Environment Variables
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    servicenow_instance_name: "{{ lookup('env', 'SERVICENOW_INSTANCE_NAME') }}"
+    servicenow_instance: "{{ lookup('env', 'SERVICENOW_INSTANCE') }}"
+    servicenow_username: "{{ lookup('env', 'SERVICENOW_USERNAME') }}"
+    servicenow_password: "{{ lookup('env', 'SERVICENOW_PASSWORD') }}"
+  
+  tasks:
+    - name: Validate environment variables
+      assert:
+        that:
+          - servicenow_instance_name | length > 0
+          - servicenow_instance | length > 0
+          - servicenow_username | length > 0
+          - servicenow_password | length > 0
+        fail_msg: "Required environment variables are not set"
+
+    - name: Get ServiceNow table data
+      uri:
+        url: "{{ servicenow_instance }}/api/now/table/incident"
+        method: GET
+        user: "{{ servicenow_username }}"
+        password: "{{ servicenow_password }}"
+        force_basic_auth: yes
+        headers:
+          Accept: "application/json"
+        validate_certs: yes
+        status_code: 200
+      register: response
+
+    - name: Display response
+      debug:
+        var: response.json
